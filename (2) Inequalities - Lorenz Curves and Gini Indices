@@ -49,100 +49,55 @@ print(final_df.columns)
 print(len(final_df))
 final_df[variable_columns] = final_df[variable_columns].fillna(0)
 
-## CREATE LORENZ CURVES AND CALCULATE GINI INDICES
-# Gini Index calculation
-def calculate_gini(cumulative_population, cumulative_value):
-    # Use the trapezoidal rule to estimate the area under the Lorenz curve
-    area_under_curve = np.trapezoid(cumulative_value, cumulative_population)
+# ----------------- Plot Lorenz Curves -----------------
+# Function to plot Lorenz curves for multiple columns on the same plot with custom legend labels
+def plot_multiple_lorenz_curves(data, columns, city, plot_type):
+    plt.figure(figsize=(8, 8))
 
-    # Gini index formula
-    gini_index = 1 - 2 * area_under_curve
-    return gini_index
+    # Dictionary to map columns to custom legend titles (modify as needed)
+    custom_legend_titles = {
+        'Tree Count': 'Current Inequality',
+        'DED Sus Tree Count': 'Following Loss of Susceptible Elm',
+        'DED Tree Count': 'Following Loss of All Elm',
+        'EAB Tree Count': 'Following Loss of Ash',
+        'Basal Area Sum': 'Current Inequality',
+        'DED Sus Basal Area': 'Following Loss of Susceptible Elm',
+        'DED Basal Area': 'Following Loss of All Elm',
+        'EAB Basal Area': 'Following Loss of Ash'
+    }
 
-# Loop through each city and generate Lorenz curves
+    for column in columns:
+        if data[column].sum() > 0:  # Avoid plotting columns with no data
+            data_sorted = data.sort_values(by=column)
+            cumulative_sum = np.cumsum(data_sorted[column])
+            cumulative_percent = (cumulative_sum / cumulative_sum.max()) * 100  # Convert to percentage
+            n = len(cumulative_sum)
+            lorenz_curve = (np.cumsum(np.ones(n) / n)) * 100  # Convert to percentage
+
+            # Plot with custom legend title
+            plt.plot(np.linspace(0.0, 100.0, n), cumulative_percent,
+                     label=custom_legend_titles.get(column, column))  # Use custom title or default to column name
+
+    # Add equality line without adding it to the legend
+    plt.plot([0, 100], [0, 100], linestyle='--', color='black', label="_nolegend_")
+
+    # Add text label for the equality line
+    plt.text(41, 44, 'Line of Perfect Equality', rotation=45, fontsize=10, color='black')
+
+    plt.xlabel("Cumulative Percentage of Population")  # x-axis label as percentage
+    plt.ylabel(f"Cumulative Percentage of {plot_type}")  # y-axis label as percentage
+    plt.legend(loc="upper left")
+    plt.title(f'Lorenz Curve for {city} - {plot_type}')
+    plt.grid(False)
+    plt.show()
+
+
+# Loop through each city
 for city in cities:
-    # Filter the data for the current city
     city_df = final_df[final_df['City'] == city]
 
-    if city_df.empty:
-        print(f"No data available for {city}")
-        continue
+    # Plot all tree count columns on the same plot
+    plot_multiple_lorenz_curves(city_df, tree_count_columns, city, "Tree Counts")
 
-    # Calculate the total population for normalization
-    total_population = city_df['Population'].sum()
-
-    # ===================== Plot for Tree Count Columns =====================
-    plt.figure(figsize=(10, 6))
-
-    for column in tree_count_columns:
-        # Sort the data by the current column in ascending order
-        sorted_df = city_df.sort_values(by=column)
-
-        # Treat each person as a point
-        sorted_df['Population Share'] = sorted_df['Population'] / total_population
-
-        # Cumulative sum for the current column and cumulative population share
-        cumulative_column = sorted_df[column].cumsum()
-        cumulative_population_share = sorted_df['Population Share'].cumsum()
-
-        # Normalize the cumulative sums to get values between 0 and 100
-        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]
-        cumulative_population_normalized = cumulative_population_share
-
-        # Calculate the Gini Index for this Lorenz curve
-        gini_index = calculate_gini(cumulative_population_normalized, cumulative_column_normalized)
-        print(f"Gini Index for {column} in {city}: {gini_index:.4f}")
-
-        # Plot Lorenz Curve for the current column
-        plt.plot(cumulative_population_normalized * 100, cumulative_column_normalized * 100,
-                 label=f'Lorenz Curve ({column})')
-
-    # Plot the equality line (diagonal)
-    plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')
-
-    # Labels and title
-    plt.xlabel('Cumulative Population (%)')
-    plt.ylabel('Cumulative Share of Trees (%)')
-    plt.title(f'Lorenz Curves for Tree Counts in {city}')
-    plt.legend()
-
-    # Show the plot for Tree Count columns
-    plt.show()
-
-    # ===================== Plot for Basal Area Columns =====================
-    plt.figure(figsize=(10, 6))
-
-    for column in basal_area_columns:
-        # Sort the data by the current column in ascending order
-        sorted_df = city_df.sort_values(by=column)
-
-        # Treat each person as a point
-        sorted_df['Population Share'] = sorted_df['Population'] / total_population
-
-        # Cumulative sum for the current column and cumulative population share
-        cumulative_column = sorted_df[column].cumsum()
-        cumulative_population_share = sorted_df['Population Share'].cumsum()
-
-        # Normalize the cumulative sums to get values between 0 and 100
-        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]
-        cumulative_population_normalized = cumulative_population_share
-
-        # Calculate the Gini Index for this Lorenz curve
-        gini_index = calculate_gini(cumulative_population_normalized, cumulative_column_normalized)
-        print(f"Gini Index for {column} in {city}: {gini_index:.4f}")
-
-        # Plot Lorenz Curve for the current column
-        plt.plot(cumulative_population_normalized * 100, cumulative_column_normalized * 100,
-                 label=f'Lorenz Curve ({column})')
-
-    # Plot the equality line (diagonal)
-    plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')
-
-    # Labels and title
-    plt.xlabel('Cumulative Population (%)')
-    plt.ylabel('Cumulative Share of Basal Area (%)')
-    plt.title(f'Lorenz Curves for Basal Area in {city}')
-    plt.legend()
-
-    # Show the plot for Basal Area columns
-    plt.show()
+    # Plot all basal area columns on the same plot
+    plot_multiple_lorenz_curves(city_df, basal_area_columns, city, "Basal Areas")
