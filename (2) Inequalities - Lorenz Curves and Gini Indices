@@ -60,7 +60,7 @@ print(len(final_df))
 final_df[variable_columns] = final_df[variable_columns].fillna(0)
 
 ## CREATE LORENZ CURVES
-# Loop through each city and generate Lorenz curves for each specified column
+# Loop through each city and generate Lorenz curves
 for city in cities:
     # Filter the data for the current city
     city_df = final_df[final_df['City'] == city]
@@ -69,34 +69,45 @@ for city in cities:
         print(f"No data available for {city}")
         continue
 
-    # Plot Lorenz curves for each specified column
-    for column in tree_count_columns:
-        # Sort the data by the current column in ascending order
+    # ===================== Plot for Tree Count Columns =====================
+    plt.figure(figsize=(10, 6))
+
+    for column in tree_count_columns: # Plot Lorenz curves for tree count columns on the same plot
+        sorted_df = city_df.sort_values(by=column) # Sort the data by the current column in ascending order
+        cumulative_column = sorted_df[column].cumsum() # Cumulative sum for the current column
+        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]  # Normalize the cumulative sums to get values between 0 and 1
+        percentiles_column = np.linspace(0, 1, len(sorted_df)) # Create an array for the percentiles (0 to 1)
+        plt.plot(percentiles_column, cumulative_column_normalized, label=f'Lorenz Curve ({column})') # Plot Lorenz Curve for the current column
+
+    plt.plot([0, 1], [0, 1], linestyle='--', color='black', label='Equality Line') # Plot the equality line (diagonal)
+
+    # Labels and title
+    plt.xlabel('Cumulative Population')
+    plt.ylabel('Cumulative Share of Trees')
+    plt.title(f'Lorenz Curves for Tree Counts in {city}')
+    plt.legend()
+
+    # Show the plot for Tree Count columns
+    plt.show()
+
+    # ===================== Plot for Basal Area Columns =====================
+    plt.figure(figsize=(10, 6))
+
+    for column in basal_area_columns:
         sorted_df = city_df.sort_values(by=column)
-
-        # Cumulative sum for the current column
         cumulative_column = sorted_df[column].cumsum()
-
-        # Normalize the cumulative sums to get values between 0 and 1
         cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]
-
-        # Create an array for the percentiles (0 to 1)
         percentiles_column = np.linspace(0, 1, len(sorted_df))
+        plt.plot(percentiles_column, cumulative_column_normalized, label=f'Lorenz Curve ({column})')
 
-        # Plot Lorenz Curve
-        plt.figure(figsize=(10, 6))
+    # Plot the equality line (diagonal)
+    plt.plot([0, 1], [0, 1], linestyle='--', color='black', label='Equality Line')
 
-        # Lorenz curve for the current column
-        plt.plot(percentiles_column, cumulative_column_normalized, label=f'Lorenz Curve ({column}) - {city}')
+    # Labels and title
+    plt.xlabel('Cumulative Population')
+    plt.ylabel('Cumulative Share of Basal Area')
+    plt.title(f'Lorenz Curves for Basal Area in {city}')
+    plt.legend()
 
-        # Plot the equality line (diagonal)
-        plt.plot([0, 1], [0, 1], linestyle='--', color='black', label='Equality Line')
-
-        # Labels and title
-        plt.xlabel('Cumulative Share of CTUIDs')
-        plt.ylabel(f'Cumulative Share of {column}')
-        plt.title(f'Lorenz Curve for {column} - {city}')
-        plt.legend()
-
-        # Show the plot for each city and column
-        plt.show()
+    # Show the plot for Basal Area columns
+    plt.show()
