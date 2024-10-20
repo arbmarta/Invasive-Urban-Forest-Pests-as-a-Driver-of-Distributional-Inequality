@@ -42,24 +42,23 @@ aggregate_df = aggregate_df.reset_index()
 aggregate_df = aggregate_df[['CTUID', 'Tree Count', 'Basal Area Sum', 'DED Sus Tree Count','DED Sus Basal Area',
                       'DED Tree Count', 'DED Basal Area', 'EAB Tree Count','EAB Basal Area']]
 
-# Population counts
+# Add population counts
 CTUID_df = pd.read_excel(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Census Statistics\Census Tracts.xlsx')
-
-Winnipeg_total_population = 749607
-Regina_total_population = 226404
-Lethbridge_total_population = 98406
-Calgary_total_population = 1306784
-Edmonton_total_population =	1010899
-
 final_df = CTUID_df.merge(aggregate_df, how='outer', on='CTUID')
-
 print(final_df.columns)
 print(len(final_df))
-
-# Fill NaN values with 0 for the specified columns
 final_df[variable_columns] = final_df[variable_columns].fillna(0)
 
-## CREATE LORENZ CURVES
+## CREATE LORENZ CURVES AND CALCULATE GINI INDICES
+# Gini Index calculation
+def calculate_gini(cumulative_population, cumulative_value):
+    # Use the trapezoidal rule to estimate the area under the Lorenz curve
+    area_under_curve = np.trapezoid(cumulative_value, cumulative_population)
+
+    # Gini index formula
+    gini_index = 1 - 2 * area_under_curve
+    return gini_index
+
 # Loop through each city and generate Lorenz curves
 for city in cities:
     # Filter the data for the current city
@@ -87,11 +86,16 @@ for city in cities:
         cumulative_population_share = sorted_df['Population Share'].cumsum()
 
         # Normalize the cumulative sums to get values between 0 and 100
-        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1] * 100
-        cumulative_population_normalized = cumulative_population_share * 100
+        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]
+        cumulative_population_normalized = cumulative_population_share
+
+        # Calculate the Gini Index for this Lorenz curve
+        gini_index = calculate_gini(cumulative_population_normalized, cumulative_column_normalized)
+        print(f"Gini Index for {column} in {city}: {gini_index:.4f}")
 
         # Plot Lorenz Curve for the current column
-        plt.plot(cumulative_population_normalized, cumulative_column_normalized, label=f'Lorenz Curve ({column})')
+        plt.plot(cumulative_population_normalized * 100, cumulative_column_normalized * 100,
+                 label=f'Lorenz Curve ({column})')
 
     # Plot the equality line (diagonal)
     plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')
@@ -120,11 +124,16 @@ for city in cities:
         cumulative_population_share = sorted_df['Population Share'].cumsum()
 
         # Normalize the cumulative sums to get values between 0 and 100
-        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1] * 100
-        cumulative_population_normalized = cumulative_population_share * 100
+        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]
+        cumulative_population_normalized = cumulative_population_share
+
+        # Calculate the Gini Index for this Lorenz curve
+        gini_index = calculate_gini(cumulative_population_normalized, cumulative_column_normalized)
+        print(f"Gini Index for {column} in {city}: {gini_index:.4f}")
 
         # Plot Lorenz Curve for the current column
-        plt.plot(cumulative_population_normalized, cumulative_column_normalized, label=f'Lorenz Curve ({column})')
+        plt.plot(cumulative_population_normalized * 100, cumulative_column_normalized * 100,
+                 label=f'Lorenz Curve ({column})')
 
     # Plot the equality line (diagonal)
     plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')
