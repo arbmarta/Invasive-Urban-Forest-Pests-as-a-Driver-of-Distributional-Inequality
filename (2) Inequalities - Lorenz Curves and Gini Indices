@@ -69,17 +69,32 @@ for city in cities:
         print(f"No data available for {city}")
         continue
 
+    # Calculate the total population for normalization
+    total_population = city_df['Population'].sum()
+
     # ===================== Plot for Tree Count Columns =====================
     plt.figure(figsize=(10, 6))
 
-    for column in tree_count_columns:  # Plot Lorenz curves for tree count columns on the same plot
-        sorted_df = city_df.sort_values(by=column)  # Sort the data by the current column in ascending order
-        cumulative_column = sorted_df[column].cumsum()  # Cumulative sum for the current column
-        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]  # Normalize the cumulative sums to get values between 0 and 1
-        percentiles_column = np.linspace(0, 1, len(sorted_df)) * 100  # Create an array for the percentiles (0 to 100 for percentage)
-        plt.plot(percentiles_column, cumulative_column_normalized * 100, label=f'Lorenz Curve ({column})')  # Plot Lorenz Curve for the current column as percentages
+    for column in tree_count_columns:
+        # Sort the data by the current column in ascending order
+        sorted_df = city_df.sort_values(by=column)
 
-    plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')  # Plot the equality line (diagonal) as percentages
+        # Treat each person as a point
+        sorted_df['Population Share'] = sorted_df['Population'] / total_population
+
+        # Cumulative sum for the current column and cumulative population share
+        cumulative_column = sorted_df[column].cumsum()
+        cumulative_population_share = sorted_df['Population Share'].cumsum()
+
+        # Normalize the cumulative sums to get values between 0 and 100
+        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1] * 100
+        cumulative_population_normalized = cumulative_population_share * 100
+
+        # Plot Lorenz Curve for the current column
+        plt.plot(cumulative_population_normalized, cumulative_column_normalized, label=f'Lorenz Curve ({column})')
+
+    # Plot the equality line (diagonal)
+    plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')
 
     # Labels and title
     plt.xlabel('Cumulative Population (%)')
@@ -94,11 +109,22 @@ for city in cities:
     plt.figure(figsize=(10, 6))
 
     for column in basal_area_columns:
+        # Sort the data by the current column in ascending order
         sorted_df = city_df.sort_values(by=column)
+
+        # Treat each person as a point
+        sorted_df['Population Share'] = sorted_df['Population'] / total_population
+
+        # Cumulative sum for the current column and cumulative population share
         cumulative_column = sorted_df[column].cumsum()
-        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1]
-        percentiles_column = np.linspace(0, 1, len(sorted_df)) * 100  # Convert x-axis to percentages
-        plt.plot(percentiles_column, cumulative_column_normalized * 100, label=f'Lorenz Curve ({column})')  # Plot Lorenz Curve as percentages
+        cumulative_population_share = sorted_df['Population Share'].cumsum()
+
+        # Normalize the cumulative sums to get values between 0 and 100
+        cumulative_column_normalized = cumulative_column / cumulative_column.iloc[-1] * 100
+        cumulative_population_normalized = cumulative_population_share * 100
+
+        # Plot Lorenz Curve for the current column
+        plt.plot(cumulative_population_normalized, cumulative_column_normalized, label=f'Lorenz Curve ({column})')
 
     # Plot the equality line (diagonal)
     plt.plot([0, 100], [0, 100], linestyle='--', color='black', label='Equality Line')
