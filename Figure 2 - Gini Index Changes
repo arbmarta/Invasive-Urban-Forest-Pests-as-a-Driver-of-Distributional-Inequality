@@ -1,1 +1,73 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
+cities = ["Calgary", "Edmonton", "Lethbridge", "Regina", "Winnipeg"]
+
+# Tree Count Data
+tree_count = {
+    'City': ['Calgary', 'Edmonton', 'Lethbridge', 'Regina', 'Winnipeg'],
+    'Current Inequality': [0.3357, 0.3211, 0.3693, 0.2393, 0.2062],
+    'Following Loss of Susceptible Elm': [0.3841, 0.261, 0.3033, 0.1705, 0.2016],
+    'Following Loss of All Elm': [0.3835, 0.2635, 0.3022, 0.168, 0.2108],
+    'Following Loss of Ash': [0.3535, 0.3413, 0.3115, 0.3271, 0.289]
+}
+
+tree_count_df = pd.DataFrame(tree_count)
+
+# Basal Area Data
+basal_area = {
+    'City': ['Calgary', 'Edmonton', 'Lethbridge', 'Regina', 'Winnipeg'],
+    'Current Inequality': [0.5972, 0.6797, 0.6924, 0.4623, 0.4443],
+    'Following Loss of Susceptible Elm': [0.6231, 0.5744, 0.6283, 0.3093, 0.3912],
+    'Following Loss of All Elm': [0.6228, 0.575, 0.626, 0.3015, 0.3337],
+    'Following Loss of Ash': [0.5969, 0.6933, 0.6872, 0.5136, 0.5236]
+}
+
+basal_area_df = pd.DataFrame(basal_area)
+
+# Y positions for the cities
+y_pos = np.arange(len(cities))
+
+# Plotting Basal Area
+plt.figure(figsize=(10, 6))
+
+# Add light grey horizontal lines for each city with a low zorder
+for y in y_pos:
+    plt.axhline(y=y, color='lightgrey', linestyle='--', linewidth=0.7, zorder=1)
+
+# Scatter plot with larger markers and higher zorder
+plt.scatter(basal_area_df['Current Inequality'], y_pos, label='Current Inequality', color='red', marker='o', s=75, zorder=2)
+plt.scatter(basal_area_df['Following Loss of Susceptible Elm'], y_pos, label='Following Loss of Susceptible Elm', marker='^', s=75, zorder=2)
+plt.scatter(basal_area_df['Following Loss of All Elm'], y_pos, label='Following Loss of All Elm', color='green', marker='v', s=75, zorder=2)
+plt.scatter(basal_area_df['Following Loss of Ash'], y_pos, label='Following Loss of Ash', color='purple', marker='D', s=75, zorder=2)
+
+# Set X-axis limits
+plt.xlim(0, 1)
+
+# Adding labels and title for Basal Area plot
+plt.yticks(y_pos, cities)
+plt.xlabel('Basal  Area Gini Index')
+plt.title('Basal Area and Post-Disturbance Basal Areas by City')
+
+# Show legend
+plt.legend()
+
+# Show the plot for Basal Area
+plt.show()
+
+# Plotting Tree Count
+plt.figure(figsize=(10, 6))
+
+# Add light grey horizontal lines for each city with a low zorder
+for y in y_pos:
+    plt.axhline(y=y, color='lightgrey', linestyle='--', linewidth=0.7, zorder=1)
+
+# Scatter plot with larger markers and higher zorder
+plt.scatter(tree_count_df['Current Inequality'], y_pos, label='Current Inequality', color='blue', marker='o', s=100, zorder=2)
+plt.scatter(tree_count_df['Following Loss of Susceptible Elm'], y_pos, label='Following Loss of Susceptible Elm', color='red', marker='^', s=100, zorder=2)
+plt.scatter(tree_count_df['Following Loss of All Elm'], y_pos, label='Following Loss of All Elm', color='orange', marker='v', s=100, zorder=2)
+plt.scatter(tree_count_df['Following Loss of Ash'], y_pos, label='Following Loss of Ash', color='purple', marker='D', s=100, zorder=2)
+
+# Set X-axis limits
+plt.xlim(0, 1)
