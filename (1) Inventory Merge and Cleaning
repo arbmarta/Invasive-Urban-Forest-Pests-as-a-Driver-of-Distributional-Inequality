@@ -1,0 +1,108 @@
+import os
+import pandas as pd
+import re
+
+# All datasets have, in order, Botanical Name, DBH, DAUID, CTUID, and City.
+cities = ["Calgary", "Edmonton", "Lethbridge", "Regina", "Winnipeg"]
+
+# Initialize an empty list to hold the data
+data_frames = []
+
+# Process each city file
+file_path_inventories = r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Inventories'
+for city in cities:
+    file_name = fr'{file_path_inventories}\{city}.xlsx'
+
+    # Check if the file exists
+    if os.path.exists(file_name):
+        df = pd.read_excel(file_name)
+
+        # Append the DataFrame to the list
+        data_frames.append(df)
+    else:
+        print(f"{city} file does not exist.")
+
+if len(data_frames) <= 0:
+    raise ValueError("No cities XLSX files loaded... Ensure they have been placed in data/cities subdir.")
+
+# Concatenate all DataFrames
+merged_df = pd.concat(data_frames, ignore_index=True)
+species_clean_df = pd.read_csv(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Non-Inventory Datasets\Find and Replace.csv', low_memory=False)
+
+# Remove rows where both DAUID and CTUID are missing
+merged_df = merged_df[~(merged_df["DAUID"].isna() & merged_df["CTUID"].isna())]
+
+# Identify DED susceptible elm
+elm_species_list = pd.read_excel(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Non-Inventory Datasets\Elm Species List.xlsx')
+merged_df = merged_df.merge(elm_species_list, on='Botanical Name', how='left')
+merged_df['DED Susceptible'].fillna(0, inplace=True)
+
+# Deal with blank (missing) species ID, then make all species names lowercase and trim spaces
+merged_df['Botanical Name'] = merged_df['Botanical Name'].replace('', pd.NA).fillna('missing')
+merged_df['Botanical Name'] = merged_df['Botanical Name'].str.lower().str.strip()
+merged_df['Botanical Name'] = merged_df['Botanical Name'].replace('', pd.NA).fillna('missing')
+
+# Standardize cultivars and species
+merged_df['Botanical Name'] = merged_df['Botanical Name'].str.replace(" x ", " ", regex=False).str.replace("'", "", regex=False)
+
+# Use find and replace to deal with spelling mistakes in inventory datasets
+for index, row in species_clean_df.iterrows():
+    find = row['Find']
+    replace = row['Replace']
+
+    # Ensure word boundaries are respected in the replacement to avoid partial replacements
+    pattern = r'\b' + re.escape(find) + r'\b'
+
+    merged_df['Botanical Name'] = merged_df['Botanical Name'].str.replace(pattern, replace, regex=True)
+
+# Remove any non-living trees
+filtered_df = merged_df[~merged_df["Botanical Name"].isin(["dead", "stump", "stump spp.", "stump for", "shrub", "shrubs", "vine", "vines", "hedge", "vacant"])]
+filtered_df = filtered_df[~filtered_df['Botanical Name'].str.contains("vacant", na=False)]
+
+# Add spp. to genus-only identification
+def add_spp_if_only_genus(name):
+    if isinstance(name, str) and len(name.strip().split()) == 1:  # Trim spaces and check if there's only one word
+        return name.strip() + " spp."  # Trim spaces and add spp.
+    return name.strip()  # Trim spaces in any case
+filtered_df.loc[:, 'Botanical Name'] = filtered_df['Botanical Name'].apply(add_spp_if_only_genus) # Apply the function to the 'Botanical Name' column
+final_count = filtered_df.shape[0]
+
+# Remove incorrect characters
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("Ã—", "", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("Ã", "", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("_x000d_", "", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("â€˜", "", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("â€™", "", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace(" '", " ", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace(" x ", " ", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("'", "", regex=False)
+
+# Spot check functions
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("pinus missing", "pinus spp.", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("stump spp.", "missing", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("malus sp.", "malus spp.", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("..", ".", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("magnolia missing", "magnolia spp.", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("missing.", "missing", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("missing spp.", "missing", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("spp. spp.", "missing", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("malus missing", "malus spp.", regex=False)
+filtered_df['Botanical Name'] = filtered_df['Botanical Name'].str.replace("pyrus missing", "pyrus spp.", regex=False)
+
+# Identify ash (Fraxinus)
+filtered_df['EAB Susceptible'] = filtered_df['Botanical Name'].apply(lambda x: 1 if x.startswith('fraxinus') else 0)
+
+# Identify elm (Ulmus)
+filtered_df['All Elm - Susceptible'] = filtered_df['Botanical Name'].apply(lambda x: 1 if x.startswith('ulmus') else 0)
+
+## Clean the DBH column
+filtered_df.loc[:, "DBH"] = pd.to_numeric(filtered_df["DBH"], errors='coerce')
+filtered_df.loc[filtered_df["DBH"] > 350, "DBH"] = 0
+filtered_df.loc[filtered_df["DBH"] == 0, "DBH"] = pd.NA
+
+# Calculate basal area
+filtered_df.loc[:, 'Basal Area'] = 0.00007854 * (filtered_df['DBH'] ** 2)
+
+# Save the updated DataFrame to the master CSV file
+filtered_df.to_csv(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Python Scripts and Datasets\(1) Filtered Master Dataset.csv', index=False)
+print("Filtered Master Dataset file created successfully.")
