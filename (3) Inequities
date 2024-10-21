@@ -66,14 +66,17 @@ df['DED Basal Area'] = df['DED Basal Area Raw'] / df['Land Area (km)']
 df['EAB Tree Density'] = df['EAB Tree Count Raw'] / df['Land Area (km)']
 df['EAB Basal Area'] = df['EAB Basal Area Raw'] / df['Land Area (km)']
 
-df['Ash Density'] = df['Ash Count Raw'] / df['Land Area (km)']
+df['Ash Proportion'] = df['Ash Count Raw'] / df['Tree Count Raw']
 df['Ash Basal Area'] = df['Ash Basal Area Raw'] / df['Land Area (km)']
+df['Ash Basal Area Proportion'] = df['Ash Basal Area Raw'] / df['Basal Area Raw']
 
-df['Elm Density'] = df['Elm Count Raw'] / df['Land Area (km)']
+df['Elm Proportion'] = df['Elm Count Raw'] / df['Tree Count Raw']
 df['Elm Basal Area'] = df['Elm Basal Area Raw'] / df['Land Area (km)']
+df['Elm Basal Area Proportion'] = df['Elm Basal Area Raw'] / df['Basal Area Raw']
 
-df['Susceptible Elm Density'] = df['Susceptible Elm Count Raw'] / df['Land Area (km)']
+df['Susceptible Elm Proportion'] = df['Susceptible Elm Count Raw'] / df['Tree Count Raw']
 df['Susceptible Elm Basal Area'] = df['Susceptible Elm Basal Area Raw'] / df['Land Area (km)']
+df['Susceptible Elm Basal Area Proportion'] = df['Susceptible Elm Basal Area Raw'] / df['Basal Area Raw']
 
 # Merge with CIMD variables
 final_df = df.merge(CIMD_df, how='left', on='DAUID')
