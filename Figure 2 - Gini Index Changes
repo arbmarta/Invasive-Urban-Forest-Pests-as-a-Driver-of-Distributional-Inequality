@@ -26,48 +26,48 @@ basal_area = {
 
 basal_area_df = pd.DataFrame(basal_area)
 
-# Y positions for the cities
-y_pos = np.arange(len(cities))
+# Updating the x-axis categories for the plot
+x_labels = ['Existing', 'Following Susceptible \nElm Loss', 'Following All \nElm Loss', 'Following Ash \nLoss']
+x_pos = np.arange(len(x_labels))
 
-# Plotting Basal Area
-plt.figure(figsize=(10, 6))
+# Extracting Gini coefficient data for each city and stage
+gini_basal = basal_area_df.set_index('City').T
+gini_tree_count = tree_count_df.set_index('City').T
 
-# Add light grey horizontal lines for each city with a low zorder
-for y in y_pos:
-    plt.axhline(y=y, color='lightgrey', linestyle='--', linewidth=0.7, zorder=1)
+# Plot for Basal Area Gini Coefficients
+plt.figure(figsize=(8, 6))
 
-# Scatter plot with larger markers and higher zorder
-plt.scatter(basal_area_df['Current Inequality'], y_pos, label='Current Inequality', color='red', marker='o', s=75, zorder=2)
-plt.scatter(basal_area_df['Following Loss of Susceptible Elm'], y_pos, label='Following Loss of Susceptible Elm', marker='^', s=75, zorder=2)
-plt.scatter(basal_area_df['Following Loss of All Elm'], y_pos, label='Following Loss of All Elm', color='green', marker='v', s=75, zorder=2)
-plt.scatter(basal_area_df['Following Loss of Ash'], y_pos, label='Following Loss of Ash', color='purple', marker='D', s=75, zorder=2)
+# Loop through each city to scatter its Gini coefficients
+for city in cities:
+    plt.scatter(x_pos, gini_basal[city], label=city, s=100)
 
-# Set X-axis limits
-plt.xlim(0, 1)
+# Set labels, title, and ticks
+plt.xticks(x_pos, x_labels)
+plt.xlabel('Basal Area Inequalities', fontweight='bold')
+plt.ylabel('Gini Indices')
 
-# Adding labels and title for Basal Area plot
-plt.yticks(y_pos, cities)
-plt.xlabel('Basal  Area Gini Index')
-plt.title('Basal Area and Post-Disturbance Basal Areas by City')
+# Adjust legend position to be outside the plot
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
-# Show legend
-plt.legend()
-
-# Show the plot for Basal Area
+# Display the plot
+plt.tight_layout()
 plt.show()
 
-# Plotting Tree Count
-plt.figure(figsize=(10, 6))
+# Plot for Tree Count Gini Coefficients
+plt.figure(figsize=(8, 6))
 
-# Add light grey horizontal lines for each city with a low zorder
-for y in y_pos:
-    plt.axhline(y=y, color='lightgrey', linestyle='--', linewidth=0.7, zorder=1)
+# Loop through each city to scatter its Gini coefficients
+for city in cities:
+    plt.scatter(x_pos, gini_tree_count[city], label=city, s=100)
 
-# Scatter plot with larger markers and higher zorder
-plt.scatter(tree_count_df['Current Inequality'], y_pos, label='Current Inequality', color='blue', marker='o', s=100, zorder=2)
-plt.scatter(tree_count_df['Following Loss of Susceptible Elm'], y_pos, label='Following Loss of Susceptible Elm', color='red', marker='^', s=100, zorder=2)
-plt.scatter(tree_count_df['Following Loss of All Elm'], y_pos, label='Following Loss of All Elm', color='orange', marker='v', s=100, zorder=2)
-plt.scatter(tree_count_df['Following Loss of Ash'], y_pos, label='Following Loss of Ash', color='purple', marker='D', s=100, zorder=2)
+# Set labels, title, and ticks
+plt.xticks(x_pos, x_labels)
+plt.xlabel('Tree Count Inequalities', fontweight='bold')
+plt.ylabel('Gini Indices')
 
-# Set X-axis limits
-plt.xlim(0, 1)
+# Adjust legend position to be outside the plot
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+# Display the plot
+plt.tight_layout()
+plt.show()
