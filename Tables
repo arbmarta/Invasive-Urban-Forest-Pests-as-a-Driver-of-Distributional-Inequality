@@ -1,0 +1,239 @@
+import pandas as pd
+import numpy as np
+
+## Import data
+Results = pd.read_csv(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Distributional Inequities Results\Correlations\Spearman Rho Correlation Results.csv')
+
+Independent_Variables = ['Population Density (km)', 'Income', 'Economic dependency Scores', 'Residential instability Scores',
+         'Ethno-cultural composition Scores','Situational vulnerability Scores']
+
+## ---------------- Identify Significant Values ----------------
+# Function to check for *, **, or ***
+def significant(value):
+    if isinstance(value, str) and ('*' in value or '**' in value or '***' in value):
+        return value
+    return np.nan  # Replace with NaN if no *, **, or ***
+
+# Apply the function to each column in Independent Variables group
+for column in Independent_Variables:
+    Results[column] = Results[column].apply(significant)
+
+## ---------------- Group by Theme ----------------
+Densities = ['Tree Density', 'DED Sus Tree Density', 'DED Tree Density', 'EAB Tree Density']
+
+Basal_Areas = ['Basal Area', 'DED Sus Basal Area', 'DED Basal Area', 'EAB Basal Area']
+
+Ash_Monocultures = ['Ash Proportion', 'Ash Basal Area Proportion', 'Ash Basal Area']
+
+Elm_Monocultures = ['Elm Proportion', 'Susceptible Elm Proportion', 'Elm Basal Area Proportion',
+                    'Susceptible Elm Basal Area Proportion', 'Elm Basal Area', 'Susceptible Elm Basal Area']
+
+Table_1 = ['Ash Proportion', 'Ash Basal Area Proportion', 'Ash Basal Area', 'Elm Proportion',
+           'Susceptible Elm Proportion', 'Elm Basal Area Proportion', 'Susceptible Elm Basal Area Proportion',
+           'Elm Basal Area', 'Susceptible Elm Basal Area']
+
+Table_2 = ['Tree Density', 'DED Sus Tree Density', 'DED Tree Density', 'EAB Tree Density', 'Basal Area',
+            'DED Sus Basal Area', 'DED Basal Area', 'EAB Basal Area']
+
+Density_Results = Results[Results['Dependent Variable'].isin(Densities)]
+print(len(Density_Results))
+print(Density_Results)
+
+Basal_Area_Results = Results[Results['Dependent Variable'].isin(Basal_Areas)]
+print(len(Basal_Area_Results))
+print(Basal_Area_Results)
+
+Ash_Monoculture_Results = Results[Results['Dependent Variable'].isin(Ash_Monocultures)]
+print(len(Ash_Monoculture_Results))
+print(Ash_Monoculture_Results)
+
+Elm_Monoculture_Results = Results[Results['Dependent Variable'].isin(Elm_Monocultures)]
+print(len(Elm_Monoculture_Results))
+print(Elm_Monoculture_Results)
+
+Table_1_Results = Results[Results['Dependent Variable'].isin(Table_1)]
+print(len(Table_1_Results))
+print(Table_1_Results)
+
+Table_2_Results = Results[Results['Dependent Variable'].isin(Table_2)]
+print(len(Table_2_Results))
+print(Table_2_Results)
+
+## ---------------- Count the Number of Correlations per Theme ----------------
+# Function to check for positive, negative, and significant values
+def count_significant(value):
+    if isinstance(value, str) and ('*' in value or '**' in value or '***' in value):
+        # Check if it's negative
+        if '-' in value:
+            return 'negative'
+        else:
+            return 'positive'
+    return np.nan  # Replace with NaN if not significant
+
+
+# Apply the function using .loc to avoid SettingWithCopyWarning
+for column in Independent_Variables:
+    Results.loc[:, column] = Results[column].apply(count_significant)
+
+# Define a dictionary to map themes to their respective dependent variables
+themes = {
+    'Ash Monocultures': Ash_Monocultures,
+    'Elm Monocultures': Elm_Monocultures,
+    'Basal Areas': Basal_Areas,
+    'Densities': Densities
+}
+
+# Loop through each theme and generate the table
+for theme_name, theme_vars in themes.items():
+    # Filter the results for the current theme
+    theme_results = Results[Results['Dependent Variable'].isin(theme_vars)]
+
+    # Create a dictionary to store counts for the current theme
+    final_counts = {}
+
+    # Loop over each independent variable to calculate positive and negative counts
+    for var in Independent_Variables:
+        final_counts[var] = []  # Initialize a list to store counts for each independent variable
+
+        for theme_var in theme_vars:
+            # Count positive correlations
+            pos_count = theme_results.loc[
+                (theme_results['Dependent Variable'] == theme_var) &
+                (theme_results[var] == 'positive'), var].notna().sum()
+
+            # Count negative correlations
+            neg_count = theme_results.loc[
+                (theme_results['Dependent Variable'] == theme_var) &
+                (theme_results[var] == 'negative'), var].notna().sum()
+
+            # Append positive and negative counts for the current theme variable
+            final_counts[var].extend([pos_count, neg_count])
+
+    # Convert the final dictionary to a DataFrame for better readability
+    columns = []
+    top_row = []
+    second_row = []
+
+    for theme_var in theme_vars:
+        top_row.extend([theme_var, theme_var])  # First row with dependent variable names
+        second_row.extend(['# +ve', '# -ve'])  # Second row with positive and negative labels
+
+    # Convert to DataFrame
+    significant_table = pd.DataFrame.from_dict(final_counts, orient='index', columns=second_row)
+
+    # Combine the headers into a MultiIndex for a multi-row header
+    significant_table.columns = pd.MultiIndex.from_arrays([top_row, second_row])
+
+    # Save the table to a CSV file with no index header, as we handle multi-row headers manually
+    csv_filename = f'C:\\Users\\alexj\\Documents\\MSc Research\\MSc Manuscripts\\Drivers of Inequality\\Distributional Inequities Results\\Correlations\\{theme_name} Significant Correlation Counts.csv'
+    significant_table.to_csv(csv_filename, index=False)
+
+    # Print confirmation
+    print(f"{theme_name} table saved as {csv_filename}")
+
+## ---------------- Calculate the Change in Magnitude ----------------
+# Function to remove asterisks and convert to numeric
+def clean_value(value):
+    if isinstance(value, str):
+        # Remove any asterisks from the string
+        value = value.replace('*', '')
+    try:
+        # Convert to a float
+        return float(value)
+    except ValueError:
+        # If conversion fails, return NaN
+        return pd.NA
+
+
+# Prepare the results dataframe
+changes = []
+
+# Iterate over each unique city
+for city in Table_2_Results['City'].unique():
+    # Filter the rows for the current city
+    city_data = Table_2_Results[Table_2_Results['City'] == city]
+
+    # Extract current and future conditions for Tree Density and Basal Area
+    tree_density = city_data[city_data['Dependent Variable'] == 'Tree Density'].iloc[0]
+    basal_area = city_data[city_data['Dependent Variable'] == 'Basal Area'].iloc[0]
+
+    ded_sus_tree_density = city_data[city_data['Dependent Variable'] == 'DED Sus Tree Density'].iloc[0]
+    ded_sus_basal_area = city_data[city_data['Dependent Variable'] == 'DED Sus Basal Area'].iloc[0]
+
+    ded_tree_density = city_data[city_data['Dependent Variable'] == 'DED Tree Density'].iloc[0]
+    ded_basal_area = city_data[city_data['Dependent Variable'] == 'DED Basal Area'].iloc[0]
+
+    eab_tree_density = city_data[city_data['Dependent Variable'] == 'EAB Tree Density'].iloc[0]
+    eab_basal_area = city_data[city_data['Dependent Variable'] == 'EAB Basal Area'].iloc[0]
+
+    # Create a dictionary to store the change statistics for the city
+    city_changes = {'City': [], 'Change Statistic': []}
+
+    # Calculate changes for each variable using absolute values
+    for var in Independent_Variables:
+        city_changes[var] = []  # Initialize a list to store the changes for this variable
+
+        # Clean and convert values for both tree density and basal area conditions
+        tree_density_value = clean_value(tree_density[var])
+        basal_area_value = clean_value(basal_area[var])
+
+        ded_sus_tree_density_value = clean_value(ded_sus_tree_density[var])
+        ded_sus_basal_area_value = clean_value(ded_sus_basal_area[var])
+
+        ded_tree_density_value = clean_value(ded_tree_density[var])
+        ded_basal_area_value = clean_value(ded_basal_area[var])
+
+        eab_tree_density_value = clean_value(eab_tree_density[var])
+        eab_basal_area_value = clean_value(eab_basal_area[var])
+
+        # Calculate the absolute change in correlation magnitude
+        ded_sus_change_tree = abs(ded_sus_tree_density_value) - abs(tree_density_value)
+        ded_change_tree = abs(ded_tree_density_value) - abs(tree_density_value)
+        eab_change_tree = abs(eab_tree_density_value) - abs(tree_density_value)
+
+        ded_sus_change_basal = abs(ded_sus_basal_area_value) - abs(basal_area_value)
+        ded_change_basal = abs(ded_basal_area_value) - abs(basal_area_value)
+        eab_change_basal = abs(eab_basal_area_value) - abs(basal_area_value)
+
+        # Store the changes in the corresponding variable column
+        city_changes[var].extend([
+            ded_sus_change_tree,
+            ded_change_tree,
+            eab_change_tree,
+            ded_sus_change_basal,
+            ded_change_basal,
+            eab_change_basal
+        ])
+
+    # Store the row labels in the 'Change Statistic' column
+    city_changes['Change Statistic'].extend([
+        'Tree Density Change with DED Sus',
+        'Tree Density Change with DED',
+        'Tree Density Change with EAB',
+        'Basal Area Change with DED Sus',
+        'Basal Area Change with DED',
+        'Basal Area Change with EAB'
+    ])
+
+    # Add the city name to each row
+    city_changes['City'].extend([city] * 6)
+
+    # Append the results for the city to the overall dataframe
+    changes.append(pd.DataFrame(city_changes))
+
+# Convert the results to a DataFrame
+Table_3_Results = pd.concat(changes, ignore_index=True)
+
+
+## ---------------- Save the Manuscript Tables ----------------
+# Save Table 1
+csv_filename = f'C:\\Users\\alexj\\Documents\\MSc Research\\MSc Manuscripts\\Drivers of Inequality\\Distributional Inequities Results\\Correlations\\Table 1.csv'
+Table_1_Results.to_csv(csv_filename, index=False)
+
+# Save Table 2
+csv_filename = f'C:\\Users\\alexj\\Documents\\MSc Research\\MSc Manuscripts\\Drivers of Inequality\\Distributional Inequities Results\\Correlations\\Table 2.csv'
+Table_2_Results.to_csv(csv_filename, index=False)
+
+# Save Table 3
+csv_filename = f'C:\\Users\\alexj\\Documents\\MSc Research\\MSc Manuscripts\\Drivers of Inequality\\Distributional Inequities Results\\Correlations\\Table 3.csv'
+Table_3_Results.to_csv(csv_filename, index=False)
