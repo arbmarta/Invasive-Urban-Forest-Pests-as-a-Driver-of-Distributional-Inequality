@@ -1,0 +1,85 @@
+# Prepares a csv for processing in SPSS
+
+import pandas as pd
+
+inventory = pd.read_csv(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Python Scripts and Datasets\(1) Filtered Master Dataset.csv', low_memory=False)
+DAUID_df = pd.read_excel(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Census Statistics\Dissemination Areas.xlsx')
+CIMD_df = pd.read_csv(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Census Statistics\CIMD.csv')
+
+# Aggregate information
+tree_count = inventory['DAUID'].value_counts()
+basal_area = inventory.groupby('DAUID')['Basal Area'].sum()
+
+DED_Sus_tree_count = inventory[inventory['DED Susceptible'] == 0]['DAUID'].value_counts()
+DED_Sus_basal_area = inventory[inventory['DED Susceptible'] == 0].groupby('DAUID')['Basal Area'].sum()
+
+DED_tree_count = inventory[inventory['All Elm - Susceptible'] == 0]['DAUID'].value_counts()
+DED_basal_area = inventory[inventory['All Elm - Susceptible'] == 0].groupby('DAUID')['Basal Area'].sum()
+
+EAB_tree_count = inventory[inventory['EAB Susceptible'] == 0]['DAUID'].value_counts()
+EAB_basal_area = inventory[inventory['EAB Susceptible'] == 0].groupby('DAUID')['Basal Area'].sum()
+
+ash_count = inventory[inventory['EAB Susceptible'] == 1]['DAUID'].value_counts()
+ash_basal_area = inventory[inventory['EAB Susceptible'] == 1].groupby('DAUID')['Basal Area'].sum()
+
+susceptible_elm_count = inventory[inventory['DED Susceptible'] == 1]['DAUID'].value_counts()
+susceptible_elm_basal_area = inventory[inventory['DED Susceptible'] == 1].groupby('DAUID')['Basal Area'].sum()
+
+elm_count = inventory[inventory['All Elm - Susceptible'] == 1]['DAUID'].value_counts()
+elm_basal_area = inventory[inventory['All Elm - Susceptible'] == 1].groupby('DAUID')['Basal Area'].sum()
+
+# Aggregate the two series
+aggregate_df = pd.DataFrame({
+    'Tree Count Raw': tree_count,
+    'Basal Area Raw': basal_area,
+    'DED Sus Tree Count Raw': DED_Sus_tree_count,
+    'DED Sus Basal Area Raw': DED_Sus_basal_area,
+    'DED Tree Count Raw': DED_tree_count,
+    'DED Basal Area Raw': DED_basal_area,
+    'EAB Tree Count Raw': EAB_tree_count,
+    'EAB Basal Area Raw': EAB_basal_area,
+    'Ash Count Raw': ash_count,
+    'Ash Basal Area Raw': ash_basal_area,
+    'Elm Count Raw': elm_count,
+    'Elm Basal Area Raw': elm_basal_area,
+    'Susceptible Elm Count Raw': susceptible_elm_count,
+    'Susceptible Elm Basal Area Raw': susceptible_elm_basal_area,
+}).fillna(0)
+
+aggregate_df = aggregate_df.reset_index()
+
+df = DAUID_df.merge(aggregate_df, how='outer', on='DAUID')
+
+print(df.columns)
+print(len(df))
+
+# Calculate density measurements per square kilometer
+df['Tree Density'] = df['Tree Count Raw'] / df['Land Area (km)']
+df['Basal Area'] = df['Basal Area Raw'] / df['Land Area (km)']
+
+df['DED Sus Tree Density'] = df['DED Sus Tree Count Raw'] / df['Land Area (km)']
+df['DED Sus Basal Area'] = df['DED Sus Basal Area Raw'] / df['Land Area (km)']
+
+df['DED Tree Density'] = df['DED Tree Count Raw'] / df['Land Area (km)']
+df['DED Basal Area'] = df['DED Basal Area Raw'] / df['Land Area (km)']
+
+df['EAB Tree Density'] = df['EAB Tree Count Raw'] / df['Land Area (km)']
+df['EAB Basal Area'] = df['EAB Basal Area Raw'] / df['Land Area (km)']
+
+df['Ash Density'] = df['Ash Count Raw'] / df['Land Area (km)']
+df['Ash Basal Area'] = df['Ash Basal Area Raw'] / df['Land Area (km)']
+
+df['Elm Density'] = df['Elm Count Raw'] / df['Land Area (km)']
+df['Elm Basal Area'] = df['Elm Basal Area Raw'] / df['Land Area (km)']
+
+df['Susceptible Elm Density'] = df['Susceptible Elm Count Raw'] / df['Land Area (km)']
+df['Susceptible Elm Basal Area'] = df['Susceptible Elm Basal Area Raw'] / df['Land Area (km)']
+
+# Merge with CIMD variables
+final_df = df.merge(CIMD_df, how='left', on='DAUID')
+print(len(final_df))
+
+final_df = final_df.fillna(666666)
+
+# Export dataframe for SPSS calculations
+final_df.to_csv('Dissemination Area File for SPSS.csv', index=False)
