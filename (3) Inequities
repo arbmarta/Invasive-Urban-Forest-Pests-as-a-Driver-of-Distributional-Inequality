@@ -125,7 +125,7 @@ print(final_df.columns)
 census_columns = ['Population Density (km)', 'Income', 'Residential instability Scores', 'Economic dependency Scores',
        'Ethno-cultural composition Scores', 'Situational vulnerability Scores']
 
-df[census_columns] = df[census_columns].fillna(666666)
+final_df[census_columns] = final_df[census_columns].fillna(666666)
 
 # Export dataframe for SPSS calculations
-final_df.to_csv('Dissemination Area File for SPSS.csv', index=False)
+final_df.to_csv('Dissemination Area Inequities Data.csv', index=False)
