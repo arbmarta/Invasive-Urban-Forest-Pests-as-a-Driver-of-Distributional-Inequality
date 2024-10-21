@@ -1,5 +1,3 @@
-# Prepares a csv for processing in SPSS
-
 import pandas as pd
 
 inventory = pd.read_csv(r'C:\Users\alexj\Documents\MSc Research\MSc Manuscripts\Drivers of Inequality\Python Scripts and Datasets\(1) Filtered Master Dataset.csv', low_memory=False)
@@ -53,6 +51,27 @@ df = DAUID_df.merge(aggregate_df, how='outer', on='DAUID')
 print(df.columns)
 print(len(df))
 
+# Step to count the number of NaN cells in columns used for calculations
+na_counts_columns = ['Tree Count Raw', 'Basal Area Raw', 'DED Sus Tree Count Raw',
+                'DED Sus Basal Area Raw', 'DED Tree Count Raw', 'DED Basal Area Raw',
+                'EAB Tree Count Raw', 'EAB Basal Area Raw', 'Ash Count Raw',
+                'Ash Basal Area Raw', 'Elm Count Raw', 'Elm Basal Area Raw',
+                'Susceptible Elm Count Raw', 'Susceptible Elm Basal Area Raw',
+                'Land Area (km)']
+
+# Count NaN values in these columns
+na_counts = df[na_counts_columns].isna().sum()
+print("Number of NaN cells per column:")
+print(na_counts)
+
+# Fill NaN values with 0 for these specific columns
+df[na_counts_columns] = df[na_counts_columns].fillna(0)
+
+# Count NaN values in these columns
+na_counts = df[na_counts_columns].isna().sum()
+print("Number of NaN cells per column:")
+print(na_counts)
+
 # Calculate density measurements per square kilometer
 df['Tree Density'] = df['Tree Count Raw'] / df['Land Area (km)']
 df['Basal Area'] = df['Basal Area Raw'] / df['Land Area (km)']
@@ -78,11 +97,35 @@ df['Susceptible Elm Proportion'] = df['Susceptible Elm Count Raw'] / df['Tree Co
 df['Susceptible Elm Basal Area'] = df['Susceptible Elm Basal Area Raw'] / df['Land Area (km)']
 df['Susceptible Elm Basal Area Proportion'] = df['Susceptible Elm Basal Area Raw'] / df['Basal Area Raw']
 
+# Convert na values to 0
+calculated_columns = ['Tree Density', 'Basal Area', 'DED Sus Tree Density', 'DED Sus Basal Area', 'DED Tree Density',
+                'DED Basal Area', 'EAB Tree Density', 'EAB Basal Area', 'Ash Proportion', 'Ash Basal Area',
+                'Ash Basal Area Proportion', 'Elm Proportion', 'Elm Basal Area', 'Elm Basal Area Proportion',
+                'Susceptible Elm Proportion', 'Susceptible Elm Basal Area', 'Susceptible Elm Basal Area Proportion']
+
+# Count NaN values in these columns
+na_counts_calculated  = df[calculated_columns].isna().sum()
+print("Number of NaN cells per column:")
+print(na_counts_calculated )
+
+# Fill NaN values with 0 for these specific columns
+df[calculated_columns] = df[calculated_columns].fillna(0)
+
+# Count NaN values in these columns
+na_counts_calculated  = df[calculated_columns].isna().sum()
+print("Number of NaN cells per column:")
+print(na_counts_calculated )
+
 # Merge with CIMD variables
 final_df = df.merge(CIMD_df, how='left', on='DAUID')
 print(len(final_df))
+print(final_df.columns)
 
-final_df = final_df.fillna(666666)
+# Set na Census Data to 666,666
+census_columns = ['Population Density (km)', 'Income', 'Residential instability Scores', 'Economic dependency Scores',
+       'Ethno-cultural composition Scores', 'Situational vulnerability Scores']
+
+df[census_columns] = df[census_columns].fillna(666666)
 
 # Export dataframe for SPSS calculations
 final_df.to_csv('Dissemination Area File for SPSS.csv', index=False)
